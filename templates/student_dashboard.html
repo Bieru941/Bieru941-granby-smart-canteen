@@ -1,0 +1,18 @@
+{% extends "base.html" %}{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard-hero mb-4"><div><span class="eyebrow">STUDENT DASHBOARD</span><h1>Welcome back, {{ current_user.name }} 👋</h1><p>Order your favorite meals quickly and keep your order history in one place.</p></div><a href="{{ url_for('menu') }}" class="btn btn-primary btn-lg">Browse Menu</a></div>
+<div class="row g-3 mb-4">
+  <div class="col-md-4"><div class="student-stat"><span>🧾</span><div><small>Total Orders</small><strong>{{ current_user.orders|length }}</strong></div></div></div>
+  <div class="col-md-4"><div class="student-stat"><span>❤️</span><div><small>Favorites</small><strong id="favoriteCount">{{ favorite_count }}</strong></div></div></div>
+  <div class="col-md-4"><div class="student-stat"><span>🔔</span><div><small>Notifications</small><strong>{{ unread_notifications }}</strong></div></div></div>
+</div>
+<div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
+  <div class="d-flex justify-content-between align-items-center mb-3"><div><h4 class="fw-bold mb-1">Recent Orders</h4><p class="text-muted mb-0">Your latest purchases.</p></div><a href="{{ url_for('profile') }}" class="btn btn-outline-secondary">Edit Profile</a></div>
+  <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Order</th><th>Total</th><th>Payment</th><th>Date</th><th>Action</th></tr></thead><tbody>
+  {% for order in orders %}<tr><td><strong>{{ order.order_number }}</strong></td><td>₱{{ '%.2f'|format(order.total) }}</td><td><span class="soft-badge">{{ order.payment_method }}</span></td><td>{{ order.created_at.strftime('%b %d, %Y %I:%M %p') }}</td><td><form method="post" action="{{ url_for('reorder', order_id=order.id) }}"><button class="btn btn-sm btn-outline-primary">Re-order</button></form></td></tr>
+  {% else %}<tr><td colspan="5" class="text-center py-5 text-muted">No orders yet. Start with today's menu!</td></tr>{% endfor %}
+  </tbody></table></div>
+</div></div>
+{% endblock %}
+
+{% block scripts %}<script>const favs=JSON.parse(localStorage.getItem('granby_favorites')||'[]');document.getElementById('favoriteCount').textContent=favs.length;</script>{% endblock %}

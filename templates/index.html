@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Smart Canteen{% endblock %}
+{% block content %}
+<div class="hero p-5 rounded-4 mb-5">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <span class="badge bg-primary mb-3">SMART SCHOOL CANTEEN</span>
+      <h1 class="display-4 fw-bold">Order your favorite food without the long queue.</h1>
+      <p class="lead">Browse the menu, add items to your cart, and place your order quickly and easily.</p>
+      <a href="{{ url_for('menu') }}" class="btn btn-primary btn-lg">Browse Menu</a>
+      {% if not current_user %}
+        <a href="{{ url_for('register') }}" class="btn btn-outline-dark btn-lg ms-2">Create Account</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<h2 class="mb-4">Popular Menu</h2>
+<div class="row g-4">
+{% for product in products %}
+  <div class="col-md-4">
+    <div class="card h-100 shadow-sm">
+      {% if product.image %}
+        <img src="{{ product.image }}" class="card-img-top product-image" alt="{{ product.name }}">
+      {% else %}
+        <div class="placeholder-image">🍽️</div>
+      {% endif %}
+      <div class="card-body">
+        <span class="badge bg-secondary">{{ product.category }}</span>
+        <h5 class="card-title mt-2">{{ product.name }}</h5>
+        <p class="card-text text-muted">{{ product.description }}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>₱{{ "%.2f"|format(product.price) }}</strong>
+          <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-primary btn-sm">View</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <p>No products yet.</p>
+{% endfor %}
+</div>
+{% endblock %}

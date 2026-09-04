@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<h1 class="fw-bold mb-4">Notifications</h1>
+{% for n in notifications %}
+  <div class="card shadow-sm mb-3">
+    <div class="card-body">
+      <h5>{{ n.title }}</h5>
+      <p class="mb-1">{{ n.message }}</p>
+      <small class="text-muted">{{ n.created_at.strftime("%b %d, %Y %I:%M %p") }}</small>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-info">No notifications yet.</div>
+{% endfor %}
+{% endblock %}

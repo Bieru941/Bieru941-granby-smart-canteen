@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{% block admin_title %}Admin Panel{% endblock %}{% endblock %}
+{% block main_nav %}{% endblock %}
+{% block main_class %}admin-host{% endblock %}
+{% block content %}
+<div class="admin-shell">
+<aside class="admin-sidebar"><div class="brand"><div class="brand-icon">🍽️</div><span>Granby Admin</span></div><div class="side-label">Workspace</div><nav class="side-nav">
+<a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if active_page=='dashboard' else '' }}"><i>▦</i><span>Dashboard</span></a>
+<a href="{{ url_for('admin_products') }}" class="{{ 'active' if active_page=='products' else '' }}"><i>🍱</i><span>Products</span></a>
+<a href="{{ url_for('admin_orders') }}" class="{{ 'active' if active_page=='orders' else '' }}"><i>🧾</i><span>Orders</span></a>
+<a href="{{ url_for('admin_users') }}" class="{{ 'active' if active_page=='users' else '' }}"><i>♟</i><span>Users</span></a>
+<a href="{{ url_for('admin_reports') }}" class="{{ 'active' if active_page=='reports' else '' }}"><i>▥</i><span>Reports</span></a>
+<a href="{{ url_for('admin_settings') }}" class="{{ 'active' if active_page=='settings' else '' }}"><i>⚙</i><span>Settings</span></a></nav>
+<div class="sidebar-bottom"><a class="side-account" href="{{ url_for('profile') }}"><div class="avatar">{{ current_user.name[:1]|upper }}</div><div><strong>{{ current_user.name }}</strong><small>Administrator</small></div></a><nav class="side-nav mt-2"><a href="{{ url_for('logout') }}"><i>↪</i><span>Logout</span></a></nav></div></aside>
+<main class="admin-main"><div class="topbar"><div><div class="topbar-kicker">SMART CANTEEN CONTROL CENTER</div><h1>{% block admin_heading %}Admin Panel{% endblock %}</h1><small>{% block admin_subtitle %}{% endblock %}</small></div><div class="admin-actions"><span class="live-dot"></span> System Online <button class="theme-mini" id="adminTheme" title="Toggle theme">◐</button></div></div>{% block admin_content %}{% endblock %}</main>
+</div>{% block admin_scripts %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "admin_base.html" %}{% set active_page='dashboard' %}{% block admin_title %}Dashboard | Granby Admin{% endblock %}{% block admin_heading %}Dashboard{% endblock %}{% block admin_subtitle %}A clean overview of today's canteen activity{% endblock %}
+{% block admin_content %}
+<div class="page-heading"><h2>Good morning, {{ current_user.name.split()[0] }} 👋</h2><p>Monitor sales, orders, inventory, and student activity at a glance.</p></div>
+<div class="stat-grid"><div class="stat-card accent"><div class="stat-icon">₱</div><div class="stat-label">TOTAL SALES</div><div class="stat-value">₱{{ '%.2f'|format(total_sales) }}</div><span class="stat-note">All recorded orders</span></div><div class="stat-card"><div class="stat-icon">📅</div><div class="stat-label">TODAY'S SALES</div><div class="stat-value">₱{{ '%.2f'|format(today_sales) }}</div><span class="stat-note">{{ today_orders }} order(s) today</span></div><div class="stat-card"><div class="stat-icon">👥</div><div class="stat-label">STUDENTS</div><div class="stat-value">{{ students_count }}</div><span class="stat-note">Registered accounts</span></div><div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">LOW STOCK</div><div class="stat-value">{{ low_stock }}</div><span class="stat-note">5 or fewer remaining</span></div><div class="stat-card"><div class="stat-icon">🏆</div><div class="stat-label">BEST CUSTOMER</div><div class="stat-value" style="font-size:18px!important">{{ best_customer.name if best_customer else "—" }}</div><span class="stat-note">{{ "₱%.2f"|format(best_customer.spent) if best_customer else "No orders yet" }}</span></div></div>
+<div class="admin-grid-2"><section class="panel"><div class="panel-header"><div><h2>Recent Orders</h2><p>Payment details only — order status is not displayed.</p></div><a class="btn-admin" href="{{ url_for('admin_orders') }}">View All</a></div><div class="table-wrap"><table class="admin-table"><thead><tr><th>Order</th><th>Student</th><th>Total</th><th>Payment</th><th>Date</th></tr></thead><tbody>{% for o in orders[:8] %}<tr><td><strong>{{ o.order_number }}</strong></td><td>{{ o.user.name }}</td><td>₱{{ '%.2f'|format(o.total) }}</td><td><span class="soft-badge">{{ o.payment_method }}</span></td><td>{{ o.created_at.strftime('%b %d, %I:%M %p') }}</td></tr>{% else %}<tr><td colspan="5" class="empty-state">No orders yet.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="panel"><div class="panel-header"><div><h2>Inventory Watch</h2><p>Products that may need attention.</p></div><a class="btn-admin" href="{{ url_for('admin_products') }}">Manage</a></div><div class="inventory-list">{% for p in products|sort(attribute='stock') %}{% if loop.index<=6 %}<div class="inventory-item"><div><strong>{{ p.name }}</strong><small>{{ p.category }}</small></div><span class="stock-pill {% if p.stock<=0 %}danger{% elif p.stock<=5 %}warning{% else %}good{% endif %}">{{ p.stock }} left</span></div>{% endif %}{% endfor %}</div></section></div>
+<section class="panel"><div class="panel-header"><div><h2>Quick Actions</h2><p>Jump directly to common admin tasks.</p></div></div><div class="quick-actions"><a href="{{ url_for('admin_products') }}#add-product">➕ <strong>Add Product</strong><small>Create a new menu item</small></a><a href="{{ url_for('admin_orders') }}">🧾 <strong>View Orders</strong><small>Review recent purchases</small></a><a href="{{ url_for('admin_users') }}">👥 <strong>Manage Users</strong><small>View student accounts</small></a><a href="{{ url_for('admin_reports') }}">📊 <strong>View Reports</strong><small>Sales and product analytics</small></a></div></section>
+<div class="modal fade" id="newOrderModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 rounded-4 shadow-lg"><div class="modal-body p-4 text-center"><div class="new-order-icon">🛎️</div><h3 class="fw-bold">New Order Received</h3><p class="text-muted">A student just placed an order.</p><div class="new-order-box text-start"><div><small>Order</small><strong id="popupOrderNumber"></strong></div><div><small>Student</small><strong id="popupStudentName"></strong></div><div><small>Total</small><strong>₱<span id="popupOrderTotal"></span></strong></div><div><small>Payment</small><strong id="popupPaymentMethod">Cash</strong></div></div><button class="btn btn-primary w-100 mt-3" data-bs-dismiss="modal">Got it</button></div></div></div></div>
+{% endblock %}
+{% block admin_scripts %}<script>
+document.addEventListener('DOMContentLoaded',()=>{
+  const modalEl=document.getElementById('newOrderModal');
+  const modal=modalEl&&window.bootstrap?new bootstrap.Modal(modalEl):null;
+  const seenKey='granby_admin_last_order_id';
+  let seen=Number(localStorage.getItem(seenKey)||'0');
+  let audioCtx=null;
+  let audioArmed=false;
+
+  function armAudio(){
+    try{
+      audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+      if(audioCtx.state==='suspended') audioCtx.resume();
+      audioArmed=true;
+    }catch(e){}
+  }
+  function beep(){
+    if(localStorage.getItem('granby_soundAlert')==='false'||!audioArmed||!audioCtx)return;
+    try{
+      const now=audioCtx.currentTime;
+      [0,0.16,0.32].forEach((delay,i)=>{
+        const osc=audioCtx.createOscillator(), gain=audioCtx.createGain();
+        osc.type='sine'; osc.frequency.value=[880,1046,1320][i];
+        gain.gain.setValueAtTime(0.0001,now+delay);
+        gain.gain.exponentialRampToValueAtTime(0.16,now+delay+0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001,now+delay+0.13);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(now+delay); osc.stop(now+delay+0.14);
+      });
+    }catch(e){}
+  }
+  ['click','keydown','touchstart'].forEach(evt=>document.addEventListener(evt,armAudio,{once:true,passive:true}));
+
+  async function poll(){
+    if(document.hidden)return;
+    try{
+      const r=await fetch('{{ url_for('admin_latest_order') }}?since_id='+encodeURIComponent(seen),{cache:'no-store'});
+      if(!r.ok)return;
+      const d=await r.json();
+      if(d.has_order&&d.id>seen){
+        seen=d.id; localStorage.setItem(seenKey,String(seen));
+        document.getElementById('popupOrderNumber').textContent=d.order_number;
+        document.getElementById('popupStudentName').textContent=d.student_name;
+        document.getElementById('popupOrderTotal').textContent=Number(d.total).toFixed(2);
+        const payment=document.getElementById('popupPaymentMethod');
+        if(payment)payment.textContent=d.payment_method||'Cash';
+        beep();
+        if('Notification' in window && Notification.permission==='granted'){
+          new Notification('New Canteen Order',{body:d.order_number+' • ₱'+Number(d.total).toFixed(2)});
+        }
+        if(modal)modal.show();
+      }
+    }catch(e){console.warn('Order notification check failed',e)}
+  }
+
+  if('Notification' in window && Notification.permission==='default'){
+    document.addEventListener('click',()=>Notification.requestPermission().catch(()=>{}),{once:true});
+  }
+  poll();
+  setInterval(poll,2500);
+});
+</script>{% endblock %}
